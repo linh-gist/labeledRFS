@@ -1,0 +1,8 @@
+[LMB-gibbs] default: 9.907
+[LMB-gibbs] random 5/20: 7.868  threshold=3.25, P_D=0.797, sigma_v=0.585, sigma_r=0.706, lambda_b=0.104, p_birth=0.0493, P_S=0.989, birth_vel_std=1.75
+[LMB-gibbs] random 17/20: 7.763  threshold=3.25, P_D=0.559, sigma_v=0.685, sigma_r=1.1, lambda_b=0.314, p_birth=0.0117, P_S=0.927, birth_vel_std=1.95
+[LMB-gibbs] local 1/20: 7.661  threshold=3.25, P_D=0.559, sigma_v=0.587, sigma_r=1.1, lambda_b=0.304, p_birth=0.0117, P_S=0.945, birth_vel_std=1.95
+[LMB-gibbs] local 6/20: 6.866  threshold=3, P_D=0.559, sigma_v=0.587, sigma_r=1.1, lambda_b=0.334, p_birth=0.0117, P_S=0.929, birth_vel_std=1.93
+[LMB-gibbs] local 19/20: 6.828  threshold=3, P_D=0.561, sigma_v=0.587, sigma_r=1.15, lambda_b=0.334, p_birth=0.00979, P_S=0.934, birth_vel_std=2.06
+[LMB-gibbs] best 6.828 after 41 trials, 1743s
+saved C:\Users\webrt\Documents\gitcloned\labeledRFS\drone_bench\calib\LMB-gibbs.json

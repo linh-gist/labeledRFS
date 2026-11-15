@@ -1,0 +1,8 @@
+[GNN] default: 13.849
+[GNN] random 1/25: 11.093  threshold=4.5, sigma_v=0.302, sigma_r=0.431, P_D=0.409, confirm_m=4, confirm_n=6, max_misses=4
+[GNN] local 1/25: 11.071  threshold=4.5, sigma_v=0.302, sigma_r=0.431, P_D=0.4, confirm_m=4, confirm_n=6, max_misses=3
+[GNN] local 2/25: 10.864  threshold=4.25, sigma_v=0.236, sigma_r=0.49, P_D=0.4, confirm_m=4, confirm_n=6, max_misses=3
+[GNN] local 19/25: 10.863  threshold=4.25, sigma_v=0.242, sigma_r=0.49, P_D=0.4, confirm_m=4, confirm_n=6, max_misses=3
+[GNN] local 23/25: 10.863  threshold=4.25, sigma_v=0.242, sigma_r=0.476, P_D=0.4, confirm_m=4, confirm_n=6, max_misses=3
+[GNN] best 10.863 after 51 trials, 544s
+saved C:\Users\webrt\Documents\gitcloned\labeledRFS\drone_bench\calib\GNN.json

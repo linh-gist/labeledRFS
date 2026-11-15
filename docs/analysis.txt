@@ -1,0 +1,216 @@
+DRONE TRACKING EXPERIMENTS - ANALYSIS OF RESULTS
+================================================
+
+Notebooks (in drone_bench/):
+  drone_tracking_playground.ipynb   labeled-RFS trackers (GLMB, LMB) vs a GNN baseline on simulated
+                                    drone video in image clutter
+  tbd_vs_rfs_comparison.ipynb       track-before-detect (IE-PHPMHT, arXiv:2504.20526) vs the
+                                    detect-then-track pipelines, with every algorithm calibrated
+
+All numbers below are copied from the executed notebooks.
+
+
+1. SETUP
+--------
+Scene: 320x240 frames, noise sigma 1 (so blob amplitude = SNR), smooth background gradient.
+  - Drones: 3-5 at start, births/deaths during the run, max 10. 1-5 px Gaussian blobs.
+  - Drone motion switches between hover, cruise, accelerate and circle modes, staying in each
+    for 10-30 frames.
+  - Clutter: 60 static blobs, about 15 transient blobs per frame, clutter SNR 0.5-5.
+    Clutter blobs are 1-5 px in the comparison notebook (the same size as drones, so size does not
+    separate them) and 1-25 px in the playground default.
+
+Detect-then-track pipelines: frame -> detector -> point measurements -> tracker.
+  - Detector: running background subtraction, matched filter, NMS, multi-scale LoG size gate.
+  - GLMB / LMB: the repo's jointglmb/jointlmb *_fast trackers with Gibbs association
+    (Murty variants in the playground only).
+  - GNN: global-nearest-neighbour baseline with M-of-N track confirmation.
+
+Track-before-detect pipeline (IE-PHPMHT), with no detection threshold in the tracking loop:
+  - Front end: per-pixel background model -> z-residual summed over 2x2 cells -> Poisson-like
+    counts plus a clutter map.
+  - Filter: Bernoulli tracks with an IMM motion model (CV / CT+ / CT- / CA), EM on the counts, a
+    Gamma prior on the target rate, and the existence update of eq. 47.
+  - Code: the `iephpmht` package of the Neural-Glimpse track_before_detect_exp project (CPU/NumPy
+    front end), used through drone_bench/dronebench/tbd.py.
+
+Metrics:
+  - GOSPA: c = 10 px, p = 2, alpha = 2, averaged over frames; lower is better.
+  - IDF1, MOTA, track recall and track precision.
+  - End-to-end latency per frame on one CPU thread: detector + tracker, or front end + filter.
+
+Assignment back-ends: the compiled `murty` / `gibbs` packages were not installed, so the Python
+shims in dronebench/shims.py were used. GLMB/LMB latencies are therefore pessimistic relative to
+the compiled C++ versions.
+
+
+2. PLAYGROUND NOTEBOOK (uncalibrated, hand-set parameters)
+----------------------------------------------------------
+Single run at SNR 3, seed 0, 80 frames. The detector reached Pd 0.72 with 11.7 false alarms per
+frame, at 31.5 ms per frame.
+
+  tracker      GOSPA   IDF1   MOTA   track_recall   tracker latency
+  GLMB-gibbs    6.72   0.88   0.79       0.83          21 ms
+  GLMB-murty    6.56   0.86   0.78       0.83          42 ms
+  LMB-gibbs     7.33   0.86   0.76       0.67          20 ms
+  LMB-murty     6.71   0.87   0.79       0.83          58 ms
+  GNN          10.14   0.76   0.54       0.83           6 ms
+
+SNR sweep (mean of 2 seeds, 50 frames):
+
+  SNR   GOSPA GLMB / LMB / GNN     IDF1 GLMB / GNN
+  1       14.6 / 14.6 / 15.8         0.03 / 0.04    nothing is trackable
+  2        9.6 / 10.1 / 11.0         0.72 / 0.68
+  3        5.9 /  5.9 /  8.5         0.88 / 0.80
+  4        3.0 /  3.0 /  6.7         0.95 / 0.86
+  5        2.3 /  2.3 /  6.5         0.96 / 0.86
+
+Findings:
+  - GLMB and LMB are close to each other and clearly better than GNN once SNR >= 3. Their
+    advantage comes from multi-hypothesis association in clutter.
+  - Below SNR 2 the detector is the bottleneck. Dim drones are not detected reliably, so no
+    tracker after the detector can recover them. This motivates track-before-detect.
+  - Murty is about as accurate as Gibbs and 2-3x slower, so only Gibbs was carried forward.
+
+
+3. TRACK-BEFORE-DETECT COMPARISON (calibrated)
+----------------------------------------------
+Protocol:
+  - SNR 2, drone-sized clutter (1-5 px).
+  - Each sequence has a 60-frame pre-roll, which every algorithm sees (background learning,
+    track build-up) but which is not scored, followed by 80 scored frames.
+  - Calibration: random + shrinking local search on mean GOSPA over training seeds 11-13.
+  - IE-PHPMHT priors (alpha, beta, gamma, p_s, p_b) come from empirical-Bayes estimation on a
+    separate labelled seed (100), as in the paper.
+  - Results are reported on held-out test seeds 1-6.
+
+Calibration effect (training GOSPA, default -> calibrated):
+  GLMB-gibbs   9.96 ->  6.84   (27 trials)
+  LMB-gibbs    9.91 ->  6.83   (41 trials)
+  GNN         13.85 -> 10.86   (51 trials)
+  IE-PHPMHT   37.65 -> 10.31   (100 trials, including a refinement stage)
+
+Held-out test results (6 seeds):
+
+  algorithm          GOSPA  IDF1  MOTA   track    latency ms        stage split (ms)
+                                         recall   mean / p95 / p99
+  GLMB-gibbs           7.0  0.73  0.63   0.57     119 / 167 / 200   detector 35 + tracker 84
+  LMB-gibbs            7.1  0.73  0.64   0.55     133 / 158 / 166   detector 35 + tracker 98
+  GNN                 10.5  0.33  0.35   0.18      43 /  48 /  56   detector 37 + tracker 5.5
+  IE-PHPMHT           10.3  0.39  0.39   0.32      10 /  12 /  14   front end 1.8 + filter 8.6
+
+  For reference, the same test seeds with default parameters:
+    GLMB 8.77, LMB 9.10, GNN 13.84, IE-PHPMHT 58.93 (MOTA -18.9).
+
+  Per-seed std of GOSPA is about 2.7-3.2. GLMB and LMB are statistically tied, and so are GNN and
+  IE-PHPMHT.
+
+3.1 What calibration changed
+
+GLMB and LMB (about 20% lower GOSPA):
+  - The search lowered the detector threshold from 4 sigma to 3 sigma, so more dim drones are
+    detected and the RFS filter rejects the extra clutter through its clutter and birth model.
+  - The cost is that about 3x more detections per frame push tracker latency from about 20 ms to
+    84-98 ms, and end-to-end latency from about 56 ms to 119-133 ms.
+
+GNN:
+  - GNN cannot exploit a lower threshold. Its best setting raises the threshold to 4.25 sigma and
+    tightens confirmation to 4-of-6.
+  - This removes false tracks (MOTA goes from -0.20 to +0.35) at the cost of recall
+    (0.42 -> 0.18).
+
+IE-PHPMHT, where calibration matters most:
+  - With the project defaults and the paper's gamma, it keeps about 60 self-sustaining false
+    tracks (GOSPA 59).
+  - Cause: the paper's gamma is the prior on the "nothing there" rate measured at a FIXED
+    target-free position. A Bernoulli that has drifted onto background is free to move and
+    climbs onto the nearest noise peak, so the rate it actually sees is higher. Eq. 47 then keeps
+    rating it as a target.
+  - Fix, within calibration: `gamma_mix` log-interpolates between the paper's gamma (0.77) and
+    the rate MLE when the position may move +-1 cell (0.27). The search chose 1.41, giving an
+    effective gamma of 0.17.
+  - Other decisive settings: birth probability p_b 30x its empirical-Bayes value, report
+    threshold t_conf 0.7, higher process noise (q_cv 0.02 -> 0.33), and a 60-frame warm-up.
+  - The paper's update equations are unchanged.
+
+3.2 Accuracy
+
+GLMB and LMB are clearly the most accurate at SNR 2 (GOSPA 7.0, IDF1 0.73).
+
+IE-PHPMHT matches GNN on GOSPA and beats it on identity (IDF1 0.39 vs 0.33, recall 0.32 vs 0.18).
+  - Its error is almost entirely missed targets. Track precision is 1.0 and the false-track part
+    of GOSPA is small.
+  - Once it has a Bernoulli on a drone it follows it accurately. In a traced case it stayed within
+    1 px for 25 frames, but the drone was never reported.
+  - Reason: eq. 47 decides existence from a SINGLE frame's rate estimate. At SNR 2 that rate
+    (about 5-15) is often below the mean of the broad on-target Gamma prior (about 16), so
+    existence evidence builds slowly. Dim or fast drones are confirmed late or never.
+
+SNR sweep with calibrated parameters (tuned at SNR 2, not retuned):
+
+  SNR   GOSPA GLMB / LMB / GNN / IE-PHPMHT    track recall IE-PHPMHT
+  1.5      9.5 / 9.3 / 13.9 / 13.1                 0.00
+  2.0      7.3 / 7.0 / 10.3 / 11.0                 0.15
+  3.0      4.1 / 3.7 /  6.9 /  9.1                 0.50
+  4.0      3.2 / 3.2 /  3.9 /  8.3                 0.50
+
+  - The detect-then-track pipelines improve steadily with SNR.
+  - IE-PHPMHT plateaus at GOSPA 8-9 and recall 0.5. That points to a structural limit (existence
+    from single-frame evidence, birth proposals without velocity, a diffuse target prior) rather
+    than noise or tuning at a single SNR.
+
+3.3 Latency
+
+IE-PHPMHT is 4-13x faster end to end and has the tightest tail: 10.4 ms mean, 13.6 ms p99.
+  - The front end is cheap (1.8 ms), and the filter cost (8.6 ms) depends on the number of
+    Bernoullis, not the number of detections.
+  - The detection pipelines pay about 35 ms for the detector alone. GLMB and LMB then add 84-98 ms
+    of association because the calibrated low threshold multiplies the detections.
+  - At 320x240, only IE-PHPMHT meets a 30 fps budget (33 ms) without further work.
+
+Expected effect of a GPU (estimates, not measured; no NVIDIA GPU on the test machine):
+  - IE-PHPMHT: only the front end has a CUDA version, so 1.8 ms -> about 0.5 ms including
+    transfers. The filter is a Python loop over a few dozen tracks and stays on the CPU, giving a
+    total of about 9 ms. At 1080p the CPU front end would be about 50 ms and the GPU brings it to
+    about 1 ms, which is why the original project uses CUDA.
+  - Detect-then-track: a GPU detector could take 35 ms down to a few ms, but GLMB/LMB association
+    is sequential and branchy and would not benefit. That gives about 85-100 ms for GLMB/LMB and
+    about 10 ms for GNN.
+  - The ranking at 320x240 would not change.
+
+
+4. CONCLUSIONS
+--------------
+1. For accuracy at low SNR in drone-sized clutter, calibrated GLMB or LMB with a permissive
+   (3 sigma) detector is the best option tested: GOSPA 7.0, IDF1 0.73.
+2. IE-PHPMHT is the only real-time option (10 ms per frame on one CPU thread) and produces almost
+   no false tracks. Its recall is too low, and calibration cannot fix that.
+3. Calibration is not optional. Every method improved by 20-30%, and IE-PHPMHT is unusable at its
+   defaults: the paper's fixed-position gamma lets false tracks sustain themselves.
+4. GNN is not competitive: at low threshold it drowns in false tracks, and at high threshold it
+   misses most drones.
+
+Caveats:
+  - 6 test seeds of 80 frames each, one scene type, simulated sensor.
+  - IE-PHPMHT was calibrated at SNR 2 only.
+  - GLMB/LMB latency uses Python assignment shims. Compiled Gibbs would lower their tracker
+    latency but would not close the gap to IE-PHPMHT.
+  - Murty variants were not calibrated.
+
+Possible next steps for IE-PHPMHT (beyond the paper, not tried):
+  - existence from multi-frame evidence, for example a sliding window of rate log-likelihoods;
+  - a tighter on-target rate prior, fitted per size or SNR class;
+  - velocity-aware birth proposals for fast drones;
+  - vectorising or compiling the filter, which is 80% of its latency.
+
+
+5. REPRODUCING
+--------------
+  cd drone_bench
+  python run_calibration.py GLMB-gibbs | LMB-gibbs | GNN | IE-PHPMHT
+      The four can run in parallel, about 10-30 min each; results go to calib/<algo>.json.
+  Open and run tbd_vs_rfs_comparison.ipynb. It loads calib/*.json; the full run takes about 10 min.
+  The notebook source is generated by make_tbd_notebook.py.
+
+  IE-PHPMHT needs the `iephpmht` package from the track_before_detect_exp project, found through
+  $IEPHPMHT_ROOT or a sibling clone next to labeledRFS.

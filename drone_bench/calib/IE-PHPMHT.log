@@ -1,0 +1,11 @@
+[IE-PHPMHT] default: 37.653
+[IE-PHPMHT] random 1/30: 12.486  B=2, sigma_cell=0.727, thr=3.5, n_warm=20, a_px=0.0181, omega=0.327, q_cv_px=0.0817, q_ca_px=0.00931, p_stay=0.898, t_conf=0.967, birth_vel_std_px=3.36, p_b_scale=0.202, gamma_mix=1.29, p_s=0.807
+[IE-PHPMHT] random 2/30: 12.050  B=2, sigma_cell=0.638, thr=6, n_warm=40, a_px=0.0045, omega=0.106, q_cv_px=0.0057, q_ca_px=0.000216, p_stay=0.921, t_conf=0.823, birth_vel_std_px=2.65, p_b_scale=0.688, gamma_mix=1.5, p_s=0.995
+[IE-PHPMHT] random 10/30: 11.547  B=2, sigma_cell=0.684, thr=3.75, n_warm=20, a_px=0.00978, omega=0.143, q_cv_px=0.208, q_ca_px=0.00326, p_stay=0.852, t_conf=0.706, birth_vel_std_px=3.36, p_b_scale=1.5, gamma_mix=1.44, p_s=0.874
+[IE-PHPMHT] random 28/30: 11.257  B=2, sigma_cell=0.903, thr=3.5, n_warm=20, a_px=0.0259, omega=0.0582, q_cv_px=0.253, q_ca_px=0.0166, p_stay=0.87, t_conf=0.733, birth_vel_std_px=3.38, p_b_scale=1.79, gamma_mix=1.26, p_s=0.951
+[IE-PHPMHT] local 4/30: 11.048  B=2, sigma_cell=0.726, thr=3.75, n_warm=60, a_px=0.0259, omega=0.04, q_cv_px=0.253, q_ca_px=0.0166, p_stay=0.87, t_conf=0.732, birth_vel_std_px=3.89, p_b_scale=1.48, gamma_mix=1.26, p_s=0.999
+[IE-PHPMHT] local 6/30: 10.912  B=2, sigma_cell=0.726, thr=3.75, n_warm=60, a_px=0.0259, omega=0.0595, q_cv_px=0.5, q_ca_px=0.0258, p_stay=0.825, t_conf=0.7, birth_vel_std_px=4, p_b_scale=0.857, gamma_mix=1.26, p_s=0.999
+[IE-PHPMHT] local 17/30: 10.907  B=2, sigma_cell=0.726, thr=3.75, n_warm=60, a_px=0.0254, omega=0.0595, q_cv_px=0.33, q_ca_px=0.0258, p_stay=0.825, t_conf=0.7, birth_vel_std_px=4, p_b_scale=1.25, gamma_mix=1.31, p_s=0.999
+[IE-PHPMHT] local 18/30: 10.865  B=2, sigma_cell=0.726, thr=3.75, n_warm=60, a_px=0.0224, omega=0.0595, q_cv_px=0.33, q_ca_px=0.0251, p_stay=0.819, t_conf=0.7, birth_vel_std_px=3.84, p_b_scale=1.25, gamma_mix=1.41, p_s=0.99
+[IE-PHPMHT] best 10.865 after 61 trials, 1469s
+saved C:\Users\webrt\Documents\gitcloned\labeledRFS\drone_bench\calib\IE-PHPMHT.json

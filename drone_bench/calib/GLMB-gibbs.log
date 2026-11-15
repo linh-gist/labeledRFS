@@ -1,0 +1,7 @@
+[GLMB-gibbs] default: 9.963
+[GLMB-gibbs] random 5/12: 7.773  threshold=3.25, P_D=0.797, sigma_v=0.585, sigma_r=0.706, lambda_b=0.104, p_birth=0.0493, P_S=0.989, birth_vel_std=1.75
+[GLMB-gibbs] local 2/14: 7.413  threshold=3, P_D=0.788, sigma_v=0.838, sigma_r=1.19, lambda_b=0.185, p_birth=0.08, P_S=0.99, birth_vel_std=1.66
+[GLMB-gibbs] local 3/14: 7.383  threshold=3, P_D=0.788, sigma_v=0.488, sigma_r=1.19, lambda_b=0.185, p_birth=0.08, P_S=0.99, birth_vel_std=1.9
+[GLMB-gibbs] local 11/14: 6.837  threshold=3, P_D=0.788, sigma_v=0.488, sigma_r=0.961, lambda_b=0.133, p_birth=0.0416, P_S=0.99, birth_vel_std=1.6
+[GLMB-gibbs] best 6.837 after 27 trials, 1385s
+saved C:\Users\webrt\Documents\gitcloned\labeledRFS\drone_bench\calib\GLMB-gibbs.json
